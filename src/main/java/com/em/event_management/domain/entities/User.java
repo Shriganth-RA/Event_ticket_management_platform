@@ -1,4 +1,4 @@
-package com.em.event_management.domain;
+package com.em.event_management.domain.entities;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -7,14 +7,16 @@ import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -24,33 +26,38 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "ticket_types")
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 // @Builder
-public class TicketType {
+@EntityListeners(AuditingEntityListener.class)
+public class User {
     
     @Id
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "price", nullable = false)
-    private Double price;
+    @Column(name = "email", nullable = false)
+    private String email;
 
-    @Column(name = "total_available")
-    private Integer totalAvailable;
+    // One user organize many events
+    @OneToMany(mappedBy = "organizer", cascade = CascadeType.ALL)
+    private List<Event> organizedEvent = new ArrayList<>(); 
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_id")
-    private Event event;
+    // Users attending events
+    @ManyToMany
+    @JoinTable(name = "user_attending_events", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "event_id"))
+    private List<Event> attendingEvents = new ArrayList<>();
 
-    @OneToMany(mappedBy = "ticketType", cascade = CascadeType.ALL)
-    private List<Ticket> tickets = new ArrayList<>();
+    // Users staffing events
+    @ManyToMany
+    @JoinTable(name = "user_staffing_events", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "event_id"))
+    private List<Event> staffingEvents = new ArrayList<>();
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
@@ -66,8 +73,7 @@ public class TicketType {
         int result = 1;
         result = prime * result + ((id == null) ? 0 : id.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result + ((price == null) ? 0 : price.hashCode());
-        result = prime * result + ((totalAvailable == null) ? 0 : totalAvailable.hashCode());
+        result = prime * result + ((email == null) ? 0 : email.hashCode());
         result = prime * result + ((createdAt == null) ? 0 : createdAt.hashCode());
         result = prime * result + ((updatedAt == null) ? 0 : updatedAt.hashCode());
         return result;
@@ -81,7 +87,7 @@ public class TicketType {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        TicketType other = (TicketType) obj;
+        User other = (User) obj;
         if (id == null) {
             if (other.id != null)
                 return false;
@@ -92,15 +98,10 @@ public class TicketType {
                 return false;
         } else if (!name.equals(other.name))
             return false;
-        if (price == null) {
-            if (other.price != null)
+        if (email == null) {
+            if (other.email != null)
                 return false;
-        } else if (!price.equals(other.price))
-            return false;
-        if (totalAvailable == null) {
-            if (other.totalAvailable != null)
-                return false;
-        } else if (!totalAvailable.equals(other.totalAvailable))
+        } else if (!email.equals(other.email))
             return false;
         if (createdAt == null) {
             if (other.createdAt != null)
